@@ -1,1 +1,1473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSMarket — Panel de Abastecimiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ds-green: #5BB741;
+    --ds-green-dark: #3a8a28;
+    --ds-green-light: #e8f6e3;
+    --ds-green-mid: #c2e8b4;
+    --ds-navy: #1B2F5E;
+    --ds-navy-dark: #0f1d3a;
+    --ds-navy-mid: #2e4a8a;
+    --ds-navy-light: #e8edf7;
+    --ds-gold: #F5A623;
+    --ds-gold-light: #fff3e0;
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface2: #f8f9fc;
+    --border: #e2e6f0;
+    --border-strong: #c8cedf;
+    --text: #1a2340;
+    --text-muted: #5a6580;
+    --text-light: #8f99b3;
+    --danger: #e53935;
+    --danger-light: #ffebee;
+    --success: #2e7d32;
+    --success-light: #e8f5e9;
+    --warning: #e65100;
+    --warning-light: #fff3e0;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow: 0 2px 12px rgba(27,47,94,0.07);
+    --shadow-lg: 0 8px 32px rgba(27,47,94,0.12);
+    --sidebar-w: 240px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #1f2333;
+    --border: #2a2f42;
+    --border-strong: #363c54;
+    --text: #e8ecf4;
+    --text-muted: #8f99b3;
+    --text-light: #5a6580;
+    --ds-green-light: #1a2e18;
+    --ds-navy-light: #151c30;
+    --ds-gold-light: #2a1f0a;
+    --danger-light: #2a1010;
+    --success-light: #0f2010;
+    --warning-light: #2a1800;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; transition: background 0.2s, color 0.2s; }
 
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar-w); background: var(--ds-navy); color: #fff;
+    display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sidebar-logo img { width: 42px; height: 42px; object-fit: contain; border-radius: 50%; background: white; padding: 3px; }
+  .sidebar-logo-text { line-height: 1.2; }
+  .sidebar-logo-text .name { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: #fff; }
+  .sidebar-logo-text .sub { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.04em; text-transform: uppercase; }
+  .sidebar-nav { padding: 16px 0; flex: 1; overflow-y: auto; }
+  .nav-section-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 12px 20px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.7);
+    cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .nav-item.active { background: rgba(91,183,65,0.15); color: #fff; border-left-color: var(--ds-green); font-weight: 500; }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.8; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .api-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.5); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ds-green); flex-shrink: 0; }
+  .status-dot.offline { background: #e53935; }
+  #api-url-display { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; word-break: break-all; }
+
+  /* MAIN */
+  #main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 600; color: var(--ds-navy); }
+  .topbar-actions { display: flex; align-items: center; gap: 12px; }
+  .api-config-btn {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500;
+    padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+  .api-config-btn:hover { background: var(--bg); color: var(--text); }
+
+  .content { padding: 28px 32px; flex: 1; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 24px; }
+  .page-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--ds-navy); }
+  .page-header p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+  /* DASHBOARD GRID */
+  .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 20px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .metric-card .label { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-card .value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--ds-navy); }
+  .metric-card .sub { font-size: 12px; color: var(--text-light); }
+  .metric-card.green .value { color: var(--ds-green-dark); }
+  .metric-card.gold .value { color: var(--ds-gold); }
+  .metric-card.navy .value { color: var(--ds-navy-mid); }
+  .metric-icon { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+  .metric-icon.green { background: var(--ds-green-light); }
+  .metric-icon.gold { background: var(--ds-gold-light); }
+  .metric-icon.navy { background: var(--ds-navy-light); }
+  .metric-icon.red { background: var(--danger-light); }
+  .metric-icon svg { width: 18px; height: 18px; }
+
+  .dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .dash-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--ds-navy); margin-bottom: 16px; }
+  .recent-list { display: flex; flex-direction: column; gap: 10px; }
+  .recent-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg); border-radius: var(--radius); }
+  .recent-item .prod { font-size: 13px; font-weight: 500; color: var(--text); }
+  .recent-item .meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-a { background: var(--ds-green-light); color: var(--ds-green-dark); }
+  .badge-b { background: var(--ds-navy-light); color: var(--ds-navy-mid); }
+  .badge-c { background: #fce4ec; color: #880e4f; }
+  .badge-x { background: var(--danger-light); color: var(--danger); }
+  .badge-y { background: var(--ds-gold-light); color: var(--warning); }
+  .badge-z { background: var(--success-light); color: var(--success); }
+  .badge-acc { background: var(--success-light); color: var(--success); }
+  .badge-mod { background: var(--ds-gold-light); color: var(--warning); }
+  .badge-rej { background: var(--danger-light); color: var(--danger); }
+
+  /* FORMS */
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+  .form-card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: var(--ds-navy); margin-bottom: 20px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text); background: var(--surface);
+    transition: border-color 0.15s; outline: none;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--ds-green); box-shadow: 0 0 0 3px rgba(91,183,65,0.12); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 20px; border-radius: var(--radius); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--ds-green); color: #fff; }
+  .btn-primary:hover { background: var(--ds-green-dark); }
+  .btn-primary:disabled { background: var(--ds-green-mid); color: var(--ds-green-dark); cursor: not-allowed; opacity: 0.6; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-navy { background: var(--ds-navy); color: #fff; }
+  .btn-navy:hover { background: var(--ds-navy-dark); }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* RESULT CARD */
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 24px; margin-top: 20px; display: none;
+  }
+  .result-card.visible { display: block; }
+  .result-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--ds-navy); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .result-metric { background: var(--bg); border-radius: var(--radius); padding: 14px 16px; }
+  .result-metric .rl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); margin-bottom: 4px; }
+  .result-metric .rv { font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700; color: var(--ds-navy); }
+  .result-metric.highlight { background: var(--ds-green-light); }
+  .result-metric.highlight .rv { color: var(--ds-green-dark); }
+  .result-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .meta-pill { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: var(--ds-navy-light); color: var(--ds-navy-mid); font-weight: 500; }
+  .rec-id-box { background: var(--bg); border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 10px 14px; margin-top: 16px; font-family: monospace; font-size: 12px; color: var(--text-muted); word-break: break-all; }
+
+  /* MASIVA */
+  .items-editor { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+  .items-editor-header { background: var(--bg); padding: 10px 14px; font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.04em; }
+  .items-list { max-height: 240px; overflow-y: auto; }
+  .item-row { display: grid; grid-template-columns: 1fr 2fr 32px; gap: 8px; padding: 8px 14px; border-bottom: 1px solid var(--border); align-items: center; }
+  .item-row:last-child { border-bottom: none; }
+  .item-row input { padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; }
+  .item-row input:focus { border-color: var(--ds-green); }
+  .remove-item-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--danger); display: flex; align-items: center; justify-content: center; transition: background 0.1s; }
+  .remove-item-btn:hover { background: var(--danger-light); }
+  .add-item-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ds-green-dark); cursor: pointer; background: none; border: none; font-family: 'DM Sans', sans-serif; font-weight: 500; padding: 8px 14px; }
+  .add-item-btn:hover { text-decoration: underline; }
+
+  /* MASIVA RESULTS TABLE */
+  .results-table-wrap { margin-top: 20px; overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .results-table th { background: var(--ds-navy); color: rgba(255,255,255,0.85); padding: 11px 14px; text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .results-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table tr:hover td { background: var(--bg); }
+  .qty-highlight { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--ds-green-dark); }
+
+  /* DECISIONES FORM */
+  .decision-options { display: flex; gap: 10px; }
+  .decision-opt { flex: 1; border: 2px solid var(--border-strong); border-radius: var(--radius); padding: 12px; cursor: pointer; text-align: center; transition: all 0.15s; }
+  .decision-opt:hover { border-color: var(--ds-green); }
+  .decision-opt.selected-aceptada { border-color: var(--success); background: var(--success-light); }
+  .decision-opt.selected-modificada { border-color: var(--ds-gold); background: var(--ds-gold-light); }
+  .decision-opt.selected-rechazada { border-color: var(--danger); background: var(--danger-light); }
+  .decision-opt .opt-label { font-size: 13px; font-weight: 600; margin-top: 6px; }
+  .decision-opt svg { width: 20px; height: 20px; margin: 0 auto; display: block; }
+
+  /* DECISIONES TABLE */
+  .decisions-filters { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+  .decisions-filters input { flex: 1; max-width: 260px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius); font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--text); outline: none; }
+  .decisions-filters input:focus { border-color: var(--ds-green); }
+
+  /* MODALS & OVERLAY */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius-xl); padding: 28px; width: 420px; max-width: 95vw; box-shadow: var(--shadow-lg); }
+  .modal h2 { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: var(--ds-navy); margin-bottom: 4px; }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .modal .form-group { margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* TOAST */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+  .toast { padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; animation: slideIn 0.25s ease; max-width: 340px; }
+  .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .toast-success { background: var(--ds-navy); color: white; }
+  .toast-error { background: var(--danger); color: white; }
+  @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* LOADING */
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay { display: none; align-items: center; justify-content: center; padding: 40px; }
+  .loading-overlay.visible { display: flex; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .empty-state svg { width: 40px; height: 40px; opacity: 0.3; margin: 0 auto 12px; display: block; }
+  .empty-state p { font-size: 14px; }
+
+  /* SECTION DIVIDER */
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    :root { --sidebar-w: 0px; }
+    #sidebar { transform: translateX(-240px); }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .dash-grid { grid-template-columns: 1fr 1fr; }
+    .dash-row { grid-template-columns: 1fr; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+  <img src="/static/logo-dsmarket.png" alt="DSMarket" id="sidebar-logo-img" onerror="this.style.display='none'">
+    <div class="sidebar-logo-text">
+      <div class="name">DSMarket</div>
+      <div class="sub">Abastecimiento</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Principal</div>
+    <a class="nav-item active" data-view="dashboard" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <div class="nav-section-label">Recomendaciones</div>
+    <a class="nav-item" data-view="individual" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      Individual
+    </a>
+    <a class="nav-item" data-view="masiva" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>
+      Masiva
+    </a>
+    <div class="nav-section-label">Operaciones</div>
+    <a class="nav-item" data-view="decisiones" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Decisiones
+    </a>
+    <a class="nav-item" data-view="monitorizacion" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 5-7"/><circle cx="8" cy="15" r="1"/><circle cx="11" cy="11" r="1"/><circle cx="14" cy="13" r="1"/><circle cx="19" cy="6" r="1"/></svg>
+      Monitorización
+    </a>
+    <a class="nav-item" data-view="historial" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Historial
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="api-status">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">API conectada</span>
+    </div>
+    <div id="api-url-display"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main id="main">
+  <header class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-actions">
+      <button class="api-config-btn" id="dark-mode-btn" onclick="toggleDarkMode()" title="Modo oscuro">
+        <svg id="dark-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <svg id="light-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      </button>
+      <button class="api-config-btn" onclick="openApiModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+        Configurar API
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="view active" id="view-dashboard">
+      <div class="page-header">
+        <h1>Panel de control</h1>
+        <p>Resumen de actividad de abastecimiento y decisiones recientes</p>
+      </div>
+      <div class="dash-grid">
+        <div class="metric-card green">
+          <div class="metric-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ds-green-dark)" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          </div>
+          <div class="label">Recomendaciones generadas</div>
+          <div class="value" id="dash-total-rec">—</div>
+          <div class="sub">Esta sesión</div>
+        </div>
+        <div class="metric-card navy">
+          <div class="metric-icon navy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ds-navy-mid)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <div class="label">Decisiones registradas</div>
+          <div class="value" id="dash-total-dec">—</div>
+          <div class="sub">Total en sistema</div>
+        </div>
+        <div class="metric-card gold">
+          <div class="metric-icon gold">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ds-gold)" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="label">Tasa de aceptación</div>
+          <div class="value" id="dash-acceptance">—</div>
+          <div class="sub">Recomendaciones aceptadas</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon navy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--ds-navy-mid)" stroke-width="2">
+                <path d="M3 3v18h18"/>
+                <path d="M7 14l3-3 4 4 5-7"/>
+              </svg>
+            </div>
+            <div class="label">Estado del modelo</div>
+            <div class="value" id="dash-model-status">—</div>
+            <div class="sub" id="dash-model-error">Monitorización predictiva</div>
+          </div>
+        </div>
+      <div class="dash-row">
+        <div class="dash-card">
+          <h3>Últimas recomendaciones generadas</h3>
+          <div id="dash-recent-rec">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+              <p>Genera tu primera recomendación para verla aquí</p>
+            </div>
+          </div>
+        </div>
+        <div class="dash-card">
+          <h3>Últimas decisiones registradas</h3>
+          <div id="dash-recent-dec">
+            <div class="loading-overlay visible" id="dash-dec-loading">
+              <div class="spinner" style="border-color: rgba(27,47,94,0.2); border-top-color: var(--ds-navy);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== INDIVIDUAL ===== -->
+    <div class="view" id="view-individual">
+      <div class="page-header">
+        <h1>Recomendación individual</h1>
+        <p>Genera una recomendación de reposición para una tienda y producto específicos</p>
+      </div>
+      <div class="form-card">
+        <h2>Parámetros de consulta</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ID Tienda</label>
+            <input type="text" id="ind-tienda" placeholder="Ej: BOS_1" />
+          </div>
+          <div class="form-group">
+            <label>ID Producto</label>
+            <input type="text" id="ind-producto" placeholder="Ej: HOME_&_GARDEN_1_110" />
+          </div>
+          <div class="form-group">
+            <label>Semana inicio</label>
+            <input type="date" id="ind-fecha" value="2016-04-25" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="ind-btn" onclick="calcularIndividual()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Calcular recomendación
+          </button>
+          <button class="btn btn-secondary" onclick="clearIndividual()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="result-card" id="ind-result">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ds-green)" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg>
+          Resultado de recomendación
+        </h3>
+        <div class="result-grid">
+          <div class="result-metric highlight">
+            <div class="rl">Cantidad a reponer</div>
+            <div class="rv" id="res-reponer">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Demanda predicha</div>
+            <div class="rv" id="res-demanda">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Stock actual</div>
+            <div class="rv" id="res-stock">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Stock objetivo</div>
+            <div class="rv" id="res-objetivo">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Stock de seguridad</div>
+            <div class="rv" id="res-seguridad">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Nivel de servicio</div>
+            <div class="rv" id="res-servicio">—</div>
+          </div>
+        </div>
+        <div class="result-meta">
+          <span class="meta-pill" id="res-tienda"></span>
+          <span class="meta-pill" id="res-semana"></span>
+          <span class="badge" id="res-abc"></span>
+          <span class="badge" id="res-xyz"></span>
+        </div>
+        <div class="rec-id-box" id="res-rec-id"></div>
+        <hr class="section-divider">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <p style="font-size:13px; color:var(--text-muted);">¿Quieres registrar tu decisión sobre esta recomendación?</p>
+          <button class="btn btn-navy" onclick="irADecision()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/></svg>
+            Registrar decisión
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MASIVA ===== -->
+    <div class="view" id="view-masiva">
+      <div class="page-header">
+        <h1>Recomendaciones</h1>
+        <p>Genera recomendaciones de reposición por tienda o para varios pares tienda-producto</p>
+      </div>
+
+      <div class="form-card">
+        <h2>Generar recomendaciones por tienda</h2>
+
+        <div class="form-grid-2" style="margin-bottom:20px;">
+          <div class="form-group">
+            <label>ID Tienda</label>
+            <input type="text" id="tienda-id" placeholder="Ej: BOS_1" value="BOS_1" />
+          </div>
+
+          <div class="form-group">
+            <label>Semana inicio</label>
+            <input type="date" id="tienda-fecha" value="2016-04-25" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-navy" id="tienda-btn" onclick="calcularPorTienda()">
+            Generar recomendaciones de la tienda
+          </button>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h2>Generar recomendaciones manualmente</h2>
+
+        <div class="form-grid-2" style="margin-bottom:20px;">
+          <div class="form-group">
+            <label>Semana inicio</label>
+            <input type="date" id="mas-fecha" value="2016-04-25" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Items (tienda / producto)</label>
+        </div>
+
+        <div class="items-editor">
+          <div class="items-editor-header">
+            <span>Lista de items</span>
+            <span id="items-count" style="font-size:12px; color:var(--text-light);">0 items</span>
+          </div>
+
+          <div class="items-list" id="items-list"></div>
+        </div>
+
+        <button class="add-item-btn" onclick="addItem()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Añadir item
+        </button>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="mas-btn" onclick="calcularMasiva()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+            Calcular todas
+          </button>
+
+          <button class="btn btn-secondary" onclick="clearMasiva()">Limpiar</button>
+          <button class="btn btn-secondary" onclick="loadExample()">Cargar ejemplo</button>
+        </div>
+      </div>
+
+      <div id="masiva-result" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <h2 style="font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:600; color:var(--ds-navy);" id="masiva-summary">
+            Resultados
+          </h2>
+
+          <button class="btn btn-secondary" onclick="exportCSV()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            Exportar CSV
+          </button>
+        </div>
+
+        <div class="results-table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Tienda</th>
+                <th>Producto</th>
+                <th>Demanda</th>
+                <th>Stock actual</th>
+                <th>Stk. seguridad</th>
+                <th>Stk. objetivo</th>
+                <th>A reponer</th>
+                <th>ABC/XYZ</th>
+              </tr>
+            </thead>
+
+            <tbody id="masiva-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+   
+
+    <!-- ===== DECISIONES ===== -->
+    <div class="view" id="view-decisiones">
+      <div class="page-header">
+        <h1>Registrar decisión</h1>
+        <p>Documenta si aceptas, modificas o rechazas una recomendación del sistema</p>
+      </div>
+      <div class="form-card">
+        <h2>Datos de la decisión</h2>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>ID de recomendación</label>
+          <input type="text" id="dec-rec-id" placeholder="REC_20160425_BOS_1_HOME_&_GARDEN_1_110" />
+        </div>
+        <div class="form-grid-2" style="margin-bottom:16px;">
+          <div class="form-group">
+            <label>Cantidad recomendada</label>
+            <input type="number" id="dec-cant-rec" placeholder="50" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Cantidad final</label>
+            <input type="number" id="dec-cant-fin" placeholder="45" min="0" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Decisión</label>
+          <div class="decision-options">
+            <div class="decision-opt" onclick="selectDecision('aceptada', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              <div class="opt-label" style="color:var(--success)">Aceptada</div>
+            </div>
+            <div class="decision-opt" onclick="selectDecision('modificada', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--ds-gold)" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <div class="opt-label" style="color:var(--ds-gold)">Modificada</div>
+            </div>
+            <div class="decision-opt" onclick="selectDecision('rechazada', this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <div class="opt-label" style="color:var(--danger)">Rechazada</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;" id="motivo-group">
+          <label>Motivo de modificación</label>
+          <textarea id="dec-motivo" placeholder="Ej: Ajuste por campaña promocional prevista..."></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label>Usuario</label>
+          <input type="text" id="dec-usuario" placeholder="Ej: operations_manager" />
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="registrarDecision()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Guardar decisión
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ===== MONITORIZACION ===== -->
+    <div class="view" id="view-monitorizacion">
+      <div class="page-header">
+        <h1>Monitorización del modelo</h1>
+        <p>Registra demanda real y compara las predicciones con lo ocurrido posteriormente</p>
+      </div>
+      <div class="form-card">
+        <h2>Registrar demanda real observada</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>ID Tienda</label>
+            <input type="text" id="mon-tienda" placeholder="Ej: BOS_1" />
+          </div>
+          <div class="form-group">
+            <label>ID Producto</label>
+            <input type="text" id="mon-producto" placeholder="Ej: HOME_&_GARDEN_1_110" />
+          </div>
+          <div class="form-group">
+            <label>Semana inicio</label>
+            <input type="date" id="mon-fecha" value="2016-04-25" />
+          </div>
+        </div>
+        <div class="form-grid-2" style="margin-top:16px;">
+          <div class="form-group">
+            <label>Demanda real</label>
+            <input type="number" id="mon-demanda-real" placeholder="Ej: 42" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="mon-save-btn" onclick="registrarVentaReal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Guardar demanda real
+          </button>
+          <button class="btn btn-secondary" onclick="clearMonitorizacion()">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <h2 style="margin-bottom:0;">Métricas de rendimiento</h2>
+          <button class="btn btn-navy" id="mon-load-btn" onclick="cargarMetricasModelo()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Calcular métricas
+          </button>
+        </div>
+        <div class="result-grid" style="margin-top:20px;">
+          <div class="result-metric highlight">
+            <div class="rl">Observaciones evaluadas</div>
+            <div class="rv" id="mon-total">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">MAE</div>
+            <div class="rv" id="mon-mae">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">RMSE</div>
+            <div class="rv" id="mon-rmse">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">MAPE</div>
+            <div class="rv" id="mon-mape">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Bias medio</div>
+            <div class="rv" id="mon-bias">—</div>
+          </div>
+          <div class="result-metric">
+            <div class="rl">Estado</div>
+            <div class="rv" id="mon-estado" style="font-size:15px;">—</div>
+          </div>
+        </div>
+        <p id="mon-interpretacion" style="font-size:13px; color:var(--text-muted); margin-top:16px;">Pulsa “Calcular métricas” para consultar el seguimiento del modelo.</p>
+        <div id="mon-detalle-container" style="display:none;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:20px; margin-bottom:12px;">
+            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:14px; color:var(--ds-navy);">Detalle de errores</h3>
+            <button class="btn btn-secondary" onclick="exportMonitorCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Exportar CSV
+            </button>
+          </div>
+          <div class="results-table-wrap">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>Tienda</th><th>Producto</th><th>Semana</th><th>Predicción</th><th>Real</th><th>Error</th><th>Error abs.</th>
+                </tr>
+              </thead>
+              <tbody id="mon-detalle-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HISTORIAL ===== -->
+    <div class="view" id="view-historial">
+      <div class="page-header">
+        <h1>Historial de decisiones</h1>
+        <p>Consulta todas las decisiones registradas en el sistema</p>
+      </div>
+      <div class="form-card" style="padding-bottom:12px;">
+        <div class="decisions-filters">
+          <input type="text" id="hist-search" placeholder="Buscar por ID, tienda, producto..." oninput="filterHistorial()" />
+          <button class="btn btn-secondary" onclick="loadHistorial()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Actualizar
+          </button>
+          <button class="btn btn-secondary" onclick="exportDecCSV()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Exportar
+          </button>
+        </div>
+        <div id="hist-container">
+          <div class="loading-overlay visible" id="hist-loading">
+            <div class="spinner" style="border-color: rgba(27,47,94,0.2); border-top-color: var(--ds-navy);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- MODAL API CONFIG -->
+<div class="modal-overlay" id="api-modal">
+  <div class="modal">
+    <h2>Configurar API</h2>
+    <p>Introduce la URL base de tu API FastAPI desplegada</p>
+    <div class="form-group">
+      <label>URL base de la API</label>
+      <input type="url" id="modal-api-url" placeholder="https://tu-api.onrender.com" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeApiModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveApiUrl()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+const DEFAULT_API = "http://127.0.0.1:8000";
+let apiBase = localStorage.getItem("dsmarket_api") || DEFAULT_API;
+let selectedDecision = null;
+let lastRecomendacion = null;
+let sessionRecs = [];
+let allHistorial = [];
+
+function getApiBase() { return apiBase.replace(/\/+$/, ""); }
+
+function updateApiStatus(ok) {
+  document.getElementById("status-dot").className = "status-dot" + (ok ? "" : " offline");
+  document.getElementById("status-text").textContent = ok ? "API conectada" : "API no disponible";
+  document.getElementById("api-url-display").textContent = getApiBase();
+}
+
+async function checkApiHealth() {
+  try {
+    const r = await fetch(getApiBase() + "/health", { signal: AbortSignal.timeout(4000) });
+    updateApiStatus(r.ok);
+  } catch { updateApiStatus(false); }
+}
+
+function openApiModal() {
+  document.getElementById("modal-api-url").value = apiBase;
+  document.getElementById("api-modal").classList.add("open");
+}
+function closeApiModal() { document.getElementById("api-modal").classList.remove("open"); }
+function saveApiUrl() {
+  const val = document.getElementById("modal-api-url").value.trim();
+  if (!val) return;
+  apiBase = val;
+  localStorage.setItem("dsmarket_api", val);
+  closeApiModal();
+  checkApiHealth();
+  toast("URL de API guardada", "success");
+}
+
+function toast(msg, type="success") {
+  const c = document.getElementById("toast-container");
+  const t = document.createElement("div");
+  t.className = "toast toast-" + type;
+  const icon = type === "success"
+    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3L22 4"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+  t.innerHTML = icon + msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function navigate(view) {
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+  document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add("active");
+  document.getElementById("view-" + view)?.classList.add("active");
+  const titles = { dashboard: "Dashboard", individual: "Recomendación individual", masiva: "Recomendación masiva", decisiones: "Registrar decisión", monitorizacion: "Monitorización del modelo", historial: "Historial de decisiones" };
+  document.getElementById("topbar-title").textContent = titles[view] || "DSMarket";
+  if (view === "historial") loadHistorial();
+  if (view === "monitorizacion") cargarMetricasModelo(false);
+  if (view === "dashboard") loadDashboard();
+}
+
+document.querySelectorAll(".nav-item").forEach(el => {
+  el.addEventListener("click", e => { e.preventDefault(); navigate(el.dataset.view); });
+});
+
+// ===== INDIVIDUAL =====
+async function calcularIndividual() {
+  const tienda = document.getElementById("ind-tienda").value.trim();
+  const producto = document.getElementById("ind-producto").value.trim();
+  const fecha = document.getElementById("ind-fecha").value;
+  if (!tienda || !producto || !fecha) { toast("Rellena todos los campos", "error"); return; }
+  const btn = document.getElementById("ind-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Calculando...`;
+  try {
+    const r = await fetch(getApiBase() + "/recomendaciones/individual", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tienda_id: tienda, producto_id: producto, semana_inicio: fecha })
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      toast("Error: " + (err.detail || r.status), "error");
+      return;
+    }
+    const data = await r.json();
+    lastRecomendacion = data;
+    sessionRecs.unshift(data);
+    renderIndividualResult(data);
+    updateApiStatus(true);
+  } catch (e) {
+    toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Calcular recomendación`;
+  }
+}
+
+function renderIndividualResult(d) {
+  document.getElementById("res-reponer").textContent = d.cantidad_a_reponer;
+  document.getElementById("res-demanda").textContent = d.demanda_predicha;
+  document.getElementById("res-stock").textContent = d.stock_actual;
+  document.getElementById("res-objetivo").textContent = d.stock_objetivo;
+  document.getElementById("res-seguridad").textContent = d.stock_seguridad;
+  document.getElementById("res-servicio").textContent = (d.service_level * 100).toFixed(0) + "%";
+  document.getElementById("res-tienda").textContent = "🏪 " + d.tienda_id;
+  document.getElementById("res-semana").textContent = "📅 " + d.semana_inicio + " → " + d.semana_fin;
+  const abc = d.abc_class;
+  const xyz = d.xyz_class;
+  document.getElementById("res-abc").className = "badge badge-" + abc.toLowerCase();
+  document.getElementById("res-abc").textContent = "ABC: " + abc;
+  document.getElementById("res-xyz").className = "badge badge-" + xyz.toLowerCase();
+  document.getElementById("res-xyz").textContent = "XYZ: " + xyz;
+  document.getElementById("res-rec-id").textContent = "ID: " + d.recomendacion_id;
+  document.getElementById("ind-result").classList.add("visible");
+}
+
+function clearIndividual() {
+  document.getElementById("ind-tienda").value = "";
+  document.getElementById("ind-producto").value = "";
+  document.getElementById("ind-result").classList.remove("visible");
+  lastRecomendacion = null;
+}
+
+function irADecision() {
+  if (!lastRecomendacion) return;
+  document.getElementById("dec-rec-id").value = lastRecomendacion.recomendacion_id;
+  document.getElementById("dec-cant-rec").value = lastRecomendacion.cantidad_a_reponer;
+  document.getElementById("dec-cant-fin").value = lastRecomendacion.cantidad_a_reponer;
+  navigate("decisiones");
+}
+
+// ===== MASIVA =====
+let items = [];
+function addItem(tienda="", prod="") {
+  items.push({ tienda, prod });
+  renderItems();
+}
+function removeItem(i) { items.splice(i, 1); renderItems(); }
+function renderItems() {
+  const list = document.getElementById("items-list");
+  document.getElementById("items-count").textContent = items.length + " items";
+  if (items.length === 0) {
+    list.innerHTML = `<div style="padding:16px; font-size:13px; color:var(--text-light); text-align:center;">Añade al menos un item</div>`;
+    return;
+  }
+  list.innerHTML = items.map((it, i) => `
+    <div class="item-row">
+      <input type="text" value="${it.tienda}" placeholder="BOS_1" oninput="items[${i}].tienda=this.value" />
+      <input type="text" value="${it.prod}" placeholder="HOME_&_GARDEN_1_110" oninput="items[${i}].prod=this.value" />
+      <button class="remove-item-btn" onclick="removeItem(${i})" title="Eliminar">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join("");
+}
+
+function loadExample() {
+  items = [
+    { tienda: "BOS_1", prod: "HOME_&_GARDEN_1_110" },
+    { tienda: "BOS_1", prod: "HOME_&_GARDEN_1_334" },
+    { tienda: "BOS_2", prod: "HOME_&_GARDEN_1_110" }
+  ];
+  renderItems();
+}
+
+function clearMasiva() {
+  items = [];
+  renderItems();
+  document.getElementById("masiva-result").style.display = "none";
+}
+
+async function calcularPorTienda() {
+  const tienda = document.getElementById("tienda-id").value.trim();
+  const fecha = document.getElementById("tienda-fecha").value;
+
+  if (!tienda || !fecha) {
+    toast("Introduce tienda y semana", "error");
+    return;
+  }
+
+  const btn = document.getElementById("tienda-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Calculando...`;
+
+  try {
+    const r = await fetch(getApiBase() + "/recomendaciones/tienda", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tienda_id: tienda,
+        semana_inicio: fecha
+      })
+    });
+
+    if (!r.ok) {
+      const err = await r.json();
+      toast("Error: " + (err.detail || r.status), "error");
+      return;
+    }
+
+    const data = await r.json();
+    renderMasivaResult(data);
+    data.recomendaciones.forEach(r => sessionRecs.unshift(r));
+    updateApiStatus(true);
+
+  } catch {
+    toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `Generar recomendaciones de la tienda`;
+  }
+}
+
+async function calcularMasiva() {
+  const fecha = document.getElementById("mas-fecha").value;
+  if (!fecha || items.length === 0) { toast("Añade items y selecciona fecha", "error"); return; }
+  const btn = document.getElementById("mas-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Calculando...`;
+  try {
+    const payload = {
+      semana_inicio: fecha,
+      items: items.map(it => ({ tienda_id: it.tienda, producto_id: it.prod }))
+    };
+    const r = await fetch(getApiBase() + "/recomendaciones/masiva", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      toast("Error: " + (err.detail || r.status), "error");
+      return;
+    }
+    const data = await r.json();
+    renderMasivaResult(data);
+    data.recomendaciones.forEach(r => sessionRecs.unshift(r));
+    updateApiStatus(true);
+  } catch {
+    toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Calcular todas`;
+  }
+}
+
+let masivaData = null;
+function renderMasivaResult(data) {
+  masivaData = data;
+  document.getElementById("masiva-summary").textContent = `${data.total_recomendaciones} recomendaciones generadas — semana del ${data.semana_inicio}`;
+  const tbody = document.getElementById("masiva-tbody");
+  tbody.innerHTML = data.recomendaciones.map(r => `
+    <tr>
+      <td>${r.tienda_id}</td>
+      <td style="font-size:12px; color:var(--text-muted);">${r.producto_id}</td>
+      <td>${r.demanda_predicha}</td>
+      <td>${r.stock_actual}</td>
+      <td>${r.stock_seguridad}</td>
+      <td>${r.stock_objetivo}</td>
+      <td class="qty-highlight">${r.cantidad_a_reponer}</td>
+      <td><span class="badge badge-${r.abc_class.toLowerCase()}" style="margin-right:4px">${r.abc_class}</span><span class="badge badge-${r.xyz_class.toLowerCase()}">${r.xyz_class}</span></td>
+    </tr>`).join("");
+  document.getElementById("masiva-result").style.display = "block";
+}
+
+function exportCSV() {
+  if (!masivaData) return;
+  const rows = [["tienda_id","producto_id","demanda_predicha","stock_actual","stock_seguridad","stock_objetivo","cantidad_a_reponer","abc_class","xyz_class","recomendacion_id"]];
+  masivaData.recomendaciones.forEach(r => rows.push([r.tienda_id,r.producto_id,r.demanda_predicha,r.stock_actual,r.stock_seguridad,r.stock_objetivo,r.cantidad_a_reponer,r.abc_class,r.xyz_class,r.recomendacion_id]));
+  downloadCSV(rows, "recomendaciones_masiva.csv");
+}
+
+// ===== DECISIONES =====
+function selectDecision(val, el) {
+  selectedDecision = val;
+  document.querySelectorAll(".decision-opt").forEach(d => d.className = "decision-opt");
+  el.classList.add("selected-" + val);
+  document.getElementById("motivo-group").style.display = (val !== "aceptada") ? "block" : "none";
+}
+
+async function registrarDecision() {
+  const recId = document.getElementById("dec-rec-id").value.trim();
+  const cantRec = parseInt(document.getElementById("dec-cant-rec").value);
+  const cantFin = parseInt(document.getElementById("dec-cant-fin").value);
+  const motivo = document.getElementById("dec-motivo").value.trim();
+  const usuario = document.getElementById("dec-usuario").value.trim();
+  if (!recId || !selectedDecision || isNaN(cantRec) || isNaN(cantFin) || !usuario) {
+    toast("Completa todos los campos obligatorios", "error"); return;
+  }
+  try {
+    const r = await fetch(getApiBase() + "/decisiones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recomendacion_id: recId, decision: selectedDecision, cantidad_recomendada: cantRec, cantidad_final: cantFin, motivo_modificacion: motivo || null, usuario })
+    });
+    if (!r.ok) { const e = await r.json(); toast("Error: " + (e.detail || r.status), "error"); return; }
+    toast("Decisión registrada correctamente", "success");
+    clearDecisionForm();
+    updateApiStatus(true);
+  } catch {
+    toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  }
+}
+
+function clearDecisionForm() {
+  ["dec-rec-id","dec-cant-rec","dec-cant-fin","dec-motivo","dec-usuario"].forEach(id => document.getElementById(id).value = "");
+  selectedDecision = null;
+  document.querySelectorAll(".decision-opt").forEach(d => d.className = "decision-opt");
+  document.getElementById("motivo-group").style.display = "none";
+}
+
+// ===== HISTORIAL =====
+async function loadHistorial() {
+  const container = document.getElementById("hist-container");
+  container.innerHTML = `<div class="loading-overlay visible" id="hist-loading"><div class="spinner" style="border-color:rgba(27,47,94,0.2);border-top-color:var(--ds-navy);"></div></div>`;
+
+  try {
+    const r = await fetch(getApiBase() + "/decisiones");
+    if (!r.ok) throw new Error("Error al consultar /decisiones");
+
+    const data = await r.json();
+    allHistorial = data.decisiones || [];
+    renderHistorial(allHistorial);
+    updateApiStatus(true);
+  } catch (error) {
+    console.error("Error cargando historial:", error);
+    container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>No se pudo cargar el historial de decisiones.</p></div>`;
+  }
+}
+
+function renderHistorial(list) {
+  if (list.length === 0) {
+    document.getElementById("hist-container").innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><p>No hay decisiones registradas aún</p></div>`;
+    return;
+  }
+  document.getElementById("hist-container").innerHTML = `
+    <div class="results-table-wrap" style="margin:0; border-radius:var(--radius); border: 1px solid var(--border);">
+      <table class="results-table">
+        <thead><tr><th>ID recomendación</th><th>Decisión</th><th>Cant. recomendada</th><th>Cant. final</th><th>Motivo</th><th>Usuario</th></tr></thead>
+        <tbody>${list.map(d => `
+          <tr>
+            <td style="font-size:11px; color:var(--text-muted); font-family:monospace;">${d.recomendacion_id}</td>
+            <td><span class="badge badge-${d.decision}">${d.decision}</span></td>
+            <td>${d.cantidad_recomendada}</td>
+            <td style="font-weight:600">${d.cantidad_final}</td>
+            <td style="font-size:12px; color:var(--text-muted);">${d.motivo_modificacion || "—"}</td>
+            <td style="font-size:12px;">${d.usuario}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function filterHistorial() {
+  const q = document.getElementById("hist-search").value.toLowerCase();
+  const filtered = allHistorial.filter(d =>
+    d.recomendacion_id?.toLowerCase().includes(q) ||
+    d.usuario?.toLowerCase().includes(q) ||
+    d.decision?.toLowerCase().includes(q)
+  );
+  renderHistorial(filtered);
+}
+
+function exportDecCSV() {
+  if (allHistorial.length === 0) { toast("No hay datos para exportar", "error"); return; }
+  const rows = [["recomendacion_id","decision","cantidad_recomendada","cantidad_final","motivo_modificacion","usuario"]];
+  allHistorial.forEach(d => rows.push([d.recomendacion_id,d.decision,d.cantidad_recomendada,d.cantidad_final,d.motivo_modificacion||"",d.usuario]));
+  downloadCSV(rows, "historial_decisiones.csv");
+}
+
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+// ===== MONITORIZACION MODELO =====
+let monitorData = null;
+
+async function registrarVentaReal() {
+  const tienda = document.getElementById("mon-tienda").value.trim();
+  const producto = document.getElementById("mon-producto").value.trim();
+  const fecha = document.getElementById("mon-fecha").value;
+  const demandaReal = parseFloat(document.getElementById("mon-demanda-real").value);
+
+  if (!tienda || !producto || !fecha || isNaN(demandaReal)) {
+    toast("Completa tienda, producto, semana y demanda real", "error");
+    return;
+  }
+
+  const btn = document.getElementById("mon-save-btn");
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Guardando...`;
+
+  try {
+    const r = await fetch(getApiBase() + "/ventas-reales", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tienda_id: tienda,
+        producto_id: producto,
+        semana_inicio: fecha,
+        demanda_real: demandaReal
+      })
+    });
+
+    if (!r.ok) {
+      const err = await r.json();
+      toast("Error: " + (err.detail || r.status), "error");
+      return;
+    }
+
+    toast("Demanda real registrada correctamente", "success");
+    clearMonitorizacion();
+    cargarMetricasModelo(false);
+    updateApiStatus(true);
+  } catch {
+    toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar demanda real`;
+  }
+}
+
+function clearMonitorizacion() {
+  document.getElementById("mon-tienda").value = "";
+  document.getElementById("mon-producto").value = "";
+  document.getElementById("mon-demanda-real").value = "";
+}
+
+async function cargarMetricasModelo(showErrors = true) {
+  const btn = document.getElementById("mon-load-btn");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner"></div> Calculando...`;
+  }
+
+  try {
+    const r = await fetch(getApiBase() + "/monitorizacion/modelo");
+
+    if (!r.ok) {
+      if (showErrors) {
+        const err = await r.json();
+        toast("Error: " + (err.detail || r.status), "error");
+      }
+      resetMonitorizacion();
+      return;
+    }
+
+    const data = await r.json();
+    monitorData = data;
+    renderMetricasModelo(data);
+    updateApiStatus(true);
+  } catch {
+    if (showErrors) toast("No se pudo conectar con la API", "error");
+    updateApiStatus(false);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Calcular métricas`;
+    }
+  }
+}
+
+function resetMonitorizacion() {
+  ["mon-total","mon-mae","mon-rmse","mon-mape","mon-bias"].forEach(id => document.getElementById(id).textContent = "—");
+  document.getElementById("mon-estado").textContent = "Sin datos";
+  document.getElementById("mon-interpretacion").textContent = "Todavía no hay suficientes datos para calcular métricas. Primero genera recomendaciones y registra demanda real.";
+  document.getElementById("mon-detalle-container").style.display = "none";
+}
+
+function renderMetricasModelo(data) {
+  document.getElementById("mon-total").textContent = data.total_observaciones_evaluadas ?? "—";
+  document.getElementById("mon-mae").textContent = data.mae ?? "—";
+  document.getElementById("mon-rmse").textContent = data.rmse ?? "—";
+  document.getElementById("mon-mape").textContent = data.mape !== null && data.mape !== undefined ? data.mape + "%" : "—";
+  document.getElementById("mon-bias").textContent = data.bias ?? "—";
+  document.getElementById("mon-estado").textContent = estadoModelo(data);
+  document.getElementById("mon-interpretacion").textContent = data.interpretacion_bias || "Métricas calculadas correctamente.";
+
+  const detalle = data.detalle || [];
+  const tbody = document.getElementById("mon-detalle-tbody");
+
+  if (detalle.length > 0) {
+    tbody.innerHTML = detalle.map(d => `
+      <tr>
+        <td>${d.tienda_id}</td>
+        <td style="font-size:12px; color:var(--text-muted);">${d.producto_id}</td>
+        <td>${String(d.semana_inicio).slice(0,10)}</td>
+        <td>${d.demanda_predicha}</td>
+        <td>${d.demanda_real}</td>
+        <td>${Number(d.error).toFixed(2)}</td>
+        <td class="qty-highlight">${Number(d.error_absoluto).toFixed(2)}</td>
+      </tr>`).join("");
+    document.getElementById("mon-detalle-container").style.display = "block";
+  } else {
+    document.getElementById("mon-detalle-container").style.display = "none";
+  }
+}
+
+function estadoModelo(data) {
+  if (!data || data.total_observaciones_evaluadas === 0) return "Sin datos";
+  if (data.mape === null || data.mape === undefined) return "Evaluable";
+  if (data.mape <= 10) return "Bueno";
+  if (data.mape <= 25) return "Aceptable";
+  return "Revisar";
+}
+
+function exportMonitorCSV() {
+  if (!monitorData || !monitorData.detalle || monitorData.detalle.length === 0) {
+    toast("No hay datos para exportar", "error");
+    return;
+  }
+
+  const rows = [["tienda_id","producto_id","semana_inicio","demanda_predicha","demanda_real","error","error_absoluto"]];
+  monitorData.detalle.forEach(d => rows.push([
+    d.tienda_id,
+    d.producto_id,
+    String(d.semana_inicio).slice(0,10),
+    d.demanda_predicha,
+    d.demanda_real,
+    d.error,
+    d.error_absoluto
+  ]));
+
+  downloadCSV(rows, "monitorizacion_modelo.csv");
+}
+
+// ===== DASHBOARD =====
+async function loadModelStatusDashboard() {
+  try {
+    const r = await fetch(getApiBase() + "/monitorizacion/modelo");
+
+    if (!r.ok) {
+      document.getElementById("dash-model-status").textContent = "Sin datos";
+      document.getElementById("dash-model-error").textContent = "Faltan ventas reales o recomendaciones";
+      return;
+    }
+
+    const data = await r.json();
+
+    let estado = "Correcto";
+
+    if (data.mape !== null && data.mape > 30) {
+      estado = "Revisar";
+    } else if (data.mape !== null && data.mape > 15) {
+      estado = "Aceptable";
+    }
+
+    document.getElementById("dash-model-status").textContent = estado;
+
+    if (data.mape !== null) {
+      document.getElementById("dash-model-error").textContent = `MAPE: ${data.mape}% · MAE: ${data.mae}`;
+    } else {
+      document.getElementById("dash-model-error").textContent = `MAE: ${data.mae} · RMSE: ${data.rmse}`;
+    }
+
+  } catch {
+    document.getElementById("dash-model-status").textContent = "Sin conexión";
+    document.getElementById("dash-model-error").textContent = "No se pudo consultar el modelo";
+  }
+}
+
+async function loadDashboard() {
+  document.getElementById("dash-total-rec").textContent = sessionRecs.length;
+  loadModelStatusDashboard();
+
+  const recDiv = document.getElementById("dash-recent-rec");
+  if (sessionRecs.length > 0) {
+    recDiv.innerHTML = `<div class="recent-list">${sessionRecs.slice(0,4).map(r => `
+      <div class="recent-item">
+        <div>
+          <div class="prod">${r.producto_id}</div>
+          <div class="meta">${r.tienda_id} &middot; semana ${r.semana_inicio}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--ds-green-dark)">${r.cantidad_a_reponer}</div>
+          <div style="font-size:11px;color:var(--text-light)">a reponer</div>
+        </div>
+      </div>`).join("")}</div>`;
+  }
+
+  try {
+    const r = await fetch(getApiBase() + "/decisiones");
+    if (!r.ok) throw new Error("Error al consultar /decisiones");
+
+    const data = await r.json();
+    const all = data.decisiones || [];
+    const total = all.length;
+    const aceptadas = all.filter(d => String(d.decision || "") === "aceptada").length;
+
+    document.getElementById("dash-total-dec").textContent = total;
+    document.getElementById("dash-acceptance").textContent = total > 0 ? Math.round(aceptadas / total * 100) + "%" : "—";
+
+    const decDiv = document.getElementById("dash-recent-dec");
+    document.getElementById("dash-dec-loading")?.remove();
+
+    if (all.length > 0) {
+      decDiv.innerHTML = `
+        <div class="recent-list">
+          ${all.slice(-4).reverse().map(d => {
+            const recId = String(d.recomendacion_id || "Sin ID");
+            const usuario = String(d.usuario || "Sin usuario");
+            const decision = String(d.decision || "sin-decision");
+            const badgeClass = decision === "aceptada" ? "badge-acc" : decision === "modificada" ? "badge-mod" : decision === "rechazada" ? "badge-rej" : "badge-b";
+            return `
+              <div class="recent-item">
+                <div>
+                  <div class="prod" style="font-size:11px;font-family:monospace">${recId.slice(0,30)}…</div>
+                  <div class="meta">${usuario}</div>
+                </div>
+                <span class="badge ${badgeClass}">${decision}</span>
+              </div>
+            `;
+          }).join("")}
+        </div>`;
+    } else {
+      decDiv.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><p>Sin decisiones registradas aún</p></div>`;
+    }
+
+    updateApiStatus(true);
+  } catch (error) {
+    console.error("Error cargando últimas decisiones:", error);
+    document.getElementById("dash-dec-loading")?.remove();
+    document.getElementById("dash-recent-dec").innerHTML = `<div class="empty-state"><p style="color:var(--danger)">No se pudieron cargar las decisiones</p></div>`;
+  }
+}
+
+// ===== DARK MODE =====
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  if (isDark) {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.setItem("dsmarket_theme", "light");
+    document.getElementById("dark-icon").style.display = "";
+    document.getElementById("light-icon").style.display = "none";
+  } else {
+    document.documentElement.setAttribute("data-theme", "dark");
+    localStorage.setItem("dsmarket_theme", "dark");
+    document.getElementById("dark-icon").style.display = "none";
+    document.getElementById("light-icon").style.display = "";
+  }
+}
+
+// Init
+document.getElementById("motivo-group").style.display = "none";
+renderItems();
+checkApiHealth();
+loadDashboard();
+setTimeout(checkApiHealth, 1000);
+setInterval(checkApiHealth, 30000);
+
+// Restore theme
+if (localStorage.getItem("dsmarket_theme") === "dark") {
+  document.documentElement.setAttribute("data-theme", "dark");
+  document.getElementById("dark-icon").style.display = "none";
+  document.getElementById("light-icon").style.display = "";
+}
+</script>
+</body>
+</html>
