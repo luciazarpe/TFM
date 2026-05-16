@@ -10,7 +10,7 @@ DSMarket is an end-to-end Machine Learning project built around a retail sales f
 - **Clustering** — product segmentation (4 clusters via K-Means + ABC/XYZ classification) and store segmentation (3 clusters)
 - **Sales Forecasting** — 28-day sales forecasting using XGBoost with skforecast, achieving a 54.7% WMAPE improvement over the baseline at chain level
 - **BI Dashboard** — interactive Power BI report with 5 tabs for executive-level insights (sales overview, temporal analysis, store performance, product categories, and events impact)
-- **Store Replenishment Use Case** — end-to-end MLOps solution including a REST API, Docker deployment, CI/CD pipeline, MLflow model tracking and a web interface for stock replenishment recommendations
+- **Store Replenishment Use Case** —  proposal for an end-to-end MLOps solution including a REST API, CI/CD pipeline and MLflow model tracking, with a functional prototype of the web interface for stock replenishment recommendations
 
 ## 📓 Notebooks
 
